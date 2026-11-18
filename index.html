@@ -1,55 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeleTop Monitor</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { background: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-family: sans-serif; padding: 20px; }
-        .card { background: var(--tg-theme-secondary-bg-color, #f0f0f0); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .value { font-size: 24px; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeleTop Monitor</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    background: var(--tg-theme-bg-color, #fff);
+    color: var(--tg-theme-text-color, #000);
+    font-family: -apple-system, system-ui, sans-serif;
+    padding: 16px; margin: 0;
+  }
+  .card {
+    background: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    border-radius: 14px; padding: 16px; margin-bottom: 12px;
+  }
+  .title { font-size: 14px; opacity: .7; margin-bottom: 4px; }
+  .big { font-size: 28px; font-weight: 700; }
+  .sub { font-size: 14px; opacity: .8; margin-top: 4px; }
+  .bar {
+    height: 8px; border-radius: 4px;
+    background: rgba(128,128,128,.25);
+    margin-top: 8px; overflow: hidden;
+  }
+  .fill { height: 100%; border-radius: 4px; transition: width .4s; }
+  .cpu { background: #34c759; }
+  .gpu { background: #007aff; }
+  .ram { background: #ff9500; }
+  .error {
+    color: #ff3b30; font-size: 13px;
+    background: rgba(255,59,48,.1);
+    padding: 12px; border-radius: 12px;
+    margin-top: 12px; display: none;
+  }
+</style>
 </head>
 <body>
-    <div class="card">
-        <div>🧠 CPU</div>
-        <div class="value" id="cpu-freq">--</div>
-        <div id="cpu-load">Load: --</div>
-    </div>
-    <div class="card">
-        <div>🎮 GPU</div>
-        <div class="value" id="gpu-freq">--</div>
-        <div id="gpu-load">Load: --</div>
-    </div>
-    <div class="card">
-        <div>💾 RAM</div>
-        <div class="value" id="ram-used">--</div>
-        <div id="ram-detail">-- / -- GB</div>
-    </div>
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
 
-        async function fetchStats() {
-            try {
-                // Запрос к локальному серверу, который запущен ботом-модулем
-                const res = await fetch('http://127.0.0.1:8080/stats');
-                const data = await res.json();
-                document.getElementById('cpu-freq').textContent = data.cpu_freq;
-                document.getElementById('cpu-load').textContent = `Load: ${data.cpu_load}`;
-                document.getElementById('gpu-freq').textContent = data.gpu_freq;
-                document.getElementById('gpu-load').textContent = `Load: ${data.gpu_load}`;
-                document.getElementById('ram-used').textContent = `${data.ram_used} GB занято`;
-                document.getElementById('ram-detail').textContent = `${data.ram_free} GB свободно / ${data.ram_total} GB всего`;
-            } catch (e) {
-                console.error(e);
-                document.getElementById('cpu-freq').textContent = 'Ошибка соединения';
-            }
-        }
-        fetchStats();
-        setInterval(fetchStats, 3000); // Обновление каждые 3 сек
-    </script>
+<div class="card">
+  <div class="title">🧠 CPU</div>
+  <div class="big" id="cpu-usage">--</div>
+  <div class="sub" id="cpu-freq">--</div>
+  <div class="bar"><div class="fill cpu" id="cpu-bar" style="width:0%"></div></div>
+</div>
+
+<div class="card">
+  <div class="title">🎮 GPU</div>
+  <div class="big" id="gpu-usage">--</div>
+  <div class="sub" id="gpu-freq">--</div>
+  <div class="bar"><div class="fill gpu" id="gpu-bar" style="width:0%"></div></div>
+</div>
+
+<div class="card">
+  <div class="title">💾 RAM</div>
+  <div class="big" id="ram-usage">--</div>
+  <div class="sub" id="ram-detail">--</div>
+  <div class="bar"><div class="fill ram" id="ram-bar" style="width:0%"></div></div>
+</div>
+
+<div class="card">
+  <div class="title">⏱ Uptime</div>
+  <div class="sub" id="uptime">--</div>
+</div>
+
+<div class="error" id="error"></div>
+
+<script>
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+async function fetchStats() {
+  try {
+    const res = await fetch('http://127.0.0.1:8080/stats', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+
+    // CPU
+    document.getElementById('cpu-usage').textContent = d.cpu_usage.toFixed(1) + '%';
+    document.getElementById('cpu-freq').textContent = d.cpu_freq;
+    document.getElementById('cpu-bar').style.width = Math.min(d.cpu_usage, 100) + '%';
+
+    // GPU
+    document.getElementById('gpu-usage').textContent = d.gpu_usage;
+    document.getElementById('gpu-freq').textContent = d.gpu_freq;
+    const gpuNum = parseInt(d.gpu_usage) || 0;
+    document.getElementById('gpu-bar').style.width = Math.min(gpuNum, 100) + '%';
+
+    // RAM (Округление до тысячных)
+    document.getElementById('ram-usage').textContent = d.ram_usage.toFixed(1) + '%';
+    document.getElementById('ram-detail').textContent =
+      d.ram_used.toFixed(3) + ' / ' + d.ram_total.toFixed(3) + ' GB (свободно ' + d.ram_free.toFixed(3) + ' GB)';
+    document.getElementById('ram-bar').style.width = Math.min(d.ram_usage, 100) + '%';
+
+    // Uptime
+    document.getElementById('uptime').textContent = d.uptime;
+
+    document.getElementById('error').style.display = 'none';
+  } catch (e) {
+    console.error(e);
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error').textContent = 'Ошибка соединения с ботом. Убедитесь, что он запущен.';
+  }
+}
+
+fetchStats();
+setInterval(fetchStats, 3000);
+</script>
 </body>
 </html>
