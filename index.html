@@ -1,31 +1,55 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeleTop</title>
-    <script src="https://telegram.org"></script>
+    <title>TeleTop Monitor</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            background: var(--tg-theme-bg-color, #18181b);
-            color: var(--tg-theme-text-color, #fff);
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
+        body { background: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-family: sans-serif; padding: 20px; }
+        .card { background: var(--tg-theme-secondary-bg-color, #f0f0f0); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .value { font-size: 24px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2>TeleTop Mini App</h2>
-    <p>Заглушка успешно работает!</p>
+    <div class="card">
+        <div>🧠 CPU</div>
+        <div class="value" id="cpu-freq">--</div>
+        <div id="cpu-load">Load: --</div>
+    </div>
+    <div class="card">
+        <div>🎮 GPU</div>
+        <div class="value" id="gpu-freq">--</div>
+        <div id="gpu-load">Load: --</div>
+    </div>
+    <div class="card">
+        <div>💾 RAM</div>
+        <div class="value" id="ram-used">--</div>
+        <div id="ram-detail">-- / -- GB</div>
+    </div>
     <script>
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        async function fetchStats() {
+            try {
+                // Запрос к локальному серверу, который запущен ботом-модулем
+                const res = await fetch('http://127.0.0.1:8080/stats');
+                const data = await res.json();
+                document.getElementById('cpu-freq').textContent = data.cpu_freq;
+                document.getElementById('cpu-load').textContent = `Load: ${data.cpu_load}`;
+                document.getElementById('gpu-freq').textContent = data.gpu_freq;
+                document.getElementById('gpu-load').textContent = `Load: ${data.gpu_load}`;
+                document.getElementById('ram-used').textContent = `${data.ram_used} GB занято`;
+                document.getElementById('ram-detail').textContent = `${data.ram_free} GB свободно / ${data.ram_total} GB всего`;
+            } catch (e) {
+                console.error(e);
+                document.getElementById('cpu-freq').textContent = 'Ошибка соединения';
+            }
+        }
+        fetchStats();
+        setInterval(fetchStats, 3000); // Обновление каждые 3 сек
     </script>
 </body>
 </html>
