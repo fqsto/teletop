@@ -40,28 +40,28 @@
 <body>
 
 <div class="card">
-  <div class="title">🧠 CPU</div>
+  <div class="title">CPU</div>
   <div class="big" id="cpu-usage">--</div>
   <div class="sub" id="cpu-freq">--</div>
   <div class="bar"><div class="fill cpu" id="cpu-bar" style="width:0%"></div></div>
 </div>
 
 <div class="card">
-  <div class="title">🎮 GPU</div>
+  <div class="title">GPU</div>
   <div class="big" id="gpu-usage">--</div>
   <div class="sub" id="gpu-freq">--</div>
   <div class="bar"><div class="fill gpu" id="gpu-bar" style="width:0%"></div></div>
 </div>
 
 <div class="card">
-  <div class="title">💾 RAM</div>
+  <div class="title">RAM</div>
   <div class="big" id="ram-usage">--</div>
   <div class="sub" id="ram-detail">--</div>
   <div class="bar"><div class="fill ram" id="ram-bar" style="width:0%"></div></div>
 </div>
 
 <div class="card">
-  <div class="title">⏱ Uptime</div>
+  <div class="title">Uptime</div>
   <div class="sub" id="uptime">--</div>
 </div>
 
@@ -89,7 +89,7 @@ async function fetchStats() {
     const gpuNum = parseInt(d.gpu_usage) || 0;
     document.getElementById('gpu-bar').style.width = Math.min(gpuNum, 100) + '%';
 
-    // RAM (Округление до тысячных)
+    // RAM
     document.getElementById('ram-usage').textContent = d.ram_usage.toFixed(1) + '%';
     document.getElementById('ram-detail').textContent =
       d.ram_used.toFixed(3) + ' / ' + d.ram_total.toFixed(3) + ' GB (свободно ' + d.ram_free.toFixed(3) + ' GB)';
